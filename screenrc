@@ -4,7 +4,7 @@ bindkey -k F2 next
 
 startup_message off
 
-backtick 0 1800 1800 fortune
+backtick 0 1800 1800 fortune -s
 
 # Window list at the bottom.
 hardstatus alwayslastline
