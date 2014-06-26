@@ -6,8 +6,8 @@
 [core]
 	excludesfile = ~/.gitignore
 [user]
-	name = Christian Oudard
-	email = christian.oudard@gmail.com
+	name = JD Russo 
+	email = thejesusrambo@gmail.com
 [alias]
 	s = status
 	st = status
