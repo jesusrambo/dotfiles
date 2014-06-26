@@ -5,203 +5,114 @@
 # If not running interactively, don't do anything
 [ -z "$PS1" ] && return
 
-# Add to executable search path.
-export PATH="\
-$HOME/bin:\
-$HOME/.rbenv/bin:\
-$HOME/.rbenv/plugins/ruby-build/bin:\
-/usr/local/bin:\
-$PATH:\
-/opt/local/:\
-/sbin:\
-/opt/local/bin:\
-"
+# don't put duplicate lines or lines starting with space in the history.
+# See bash(1) for more options
+HISTCONTROL=ignoreboth
 
-# Don't put duplicate lines in the history. See bash(1) for more options.
-HISTCONTROL=ignoredups:ignorespace
-
-# Append to the history file, don't overwrite it.
+# append to the history file, don't overwrite it
 shopt -s histappend
 
-# Use a larger history size.
-export HISTSIZE=25000
-export HISTFILESIZE=50000
+# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
+HISTSIZE=1000
+HISTFILESIZE=2000
 
-export HISTIGNORE=" *"
-
-# Check the window size after each command and, if necessary,
+# check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
 shopt -s checkwinsize
 
-# Make "less" more friendly for non-text input files, see lesspipe(1).
+# If set, the pattern "**" used in a pathname expansion context will
+# match all files and zero or more directories and subdirectories.
+#shopt -s globstar
+
+# make less more friendly for non-text input files, see lesspipe(1)
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
-# Import color codes.
-source .colors.sh
-
-# Set the prompt.
-# References:
-# http://superuser.com/a/517110/15168
-# http://superuser.com/questions/187455/right-align-part-of-prompt
-function prompt_command() {
-    # If working on a python virtualenv, show it in the prompt.
-    if [ -n "$VIRTUAL_ENV" ]; then
-        local virtualenv="($(basename $VIRTUAL_ENV)) "
-    else
-        local virtualenv=""
-    fi
-
-    # If coming in via ssh, show it in the prompt.
-    if [ -n "$SSH_CLIENT" ]; then
-        local ssh="(ssh) "
-    else
-        local ssh=""
-    fi
-
-    # Show current git branch in the prompt.
-    function find_git_branch {
-       local dir=. head
-       until [ "$dir" -ef / ]; do
-          if [ -f "$dir/.git/HEAD" ]; then
-             head=$(< "$dir/.git/HEAD")
-             if [[ $head == ref:\ refs/heads/* ]]; then
-                git_branch="${head#*/*/}"
-             elif [[ $head != '' ]]; then
-                git_branch="detached"
-             else
-                git_branch="unknown"
-             fi
-             return
-          fi
-          dir="../$dir"
-       done
-       git_branch=''
-    }
-    function find_git_dirty {
-        local st=$(git status --untracked-files=no --porcelain 2>/dev/null)
-        if [[ $st == "" ]]; then
-            git_dirty=''
-        else
-            git_dirty='*'
-        fi
-    }
-    find_git_branch
-    find_git_dirty
-    if [ -n "$git_branch" ]; then
-        local git="($git_branch$git_dirty) "
-    else
-        local git=""
-    fi
-
-    function prompt_left() {
-        printf "$txtylw\\\\u@\h$txtrst:$bldcyn\w$txtrst   "
-    }
-    function prompt_right() {
-        # We need to do the date handling explicitly here instead of with PS1
-        # escape codes, so we can get an accurate width.
-        printf "\
-$bldpur$git$txtrst\
-$txtgrn$virtualenv$txtrst\
-$txtcyn$ssh$txtrst\
-$bldylw$(date +%H:%M | tr -d '\n')$txtrst\
-"
-    }
-
-    # Calculate the proper spacing for the right aligned portion of the prompt.
-    local left=$(prompt_left)
-    local right=$(prompt_right)
-    local compensate=43 # Compensate for special terminal characters in calculating string lengths.
-    local space=$(\
-        printf "%*s"\
-            "$(($(tput cols)-${#right}+${compensate}))"\
-            " "\
-    )
-
-    # Assemble the prompt.
-    PS1="${space}${right}\r${left}\n\$ "
-
-    # Write history after every command.
-    history -a
-}
-PROMPT_COMMAND=prompt_command
-
-# Set gnome-terminal colors
-if command -v gconftool-2 >/dev/null; then
-    gconftool-2 --set "/apps/gnome-terminal/profiles/Default/use_theme_background" --type bool false
-    gconftool-2 --set "/apps/gnome-terminal/profiles/Default/use_theme_colors" --type bool false
-    gconftool-2 --set "/apps/gnome-terminal/profiles/Default/palette" --type string "#070736364242:#D3D301010202:#858599990000:#B5B589890000:#26268B8BD2D2:#D3D336368282:#2A2AA1A19898:#EEEEE8E8D5D5:#00002B2B3636:#CBCB4B4B1616:#58586E6E7575:#65657B7B8383:#838394949696:#6C6C7171C4C4:#9393A1A1A1A1:#FDFDF6F6E3E3"
-    gconftool-2 --set "/apps/gnome-terminal/profiles/Default/background_color" --type string "#00002B2B3636"
-    gconftool-2 --set "/apps/gnome-terminal/profiles/Default/foreground_color" --type string "#838394949696"
+# set variable identifying the chroot you work in (used in the prompt below)
+if [ -z "$debian_chroot" ] && [ -r /etc/debian_chroot ]; then
+    debian_chroot=$(cat /etc/debian_chroot)
 fi
 
-# Color settings for ls.
-if [ -x /usr/bin/dircolors ] && [ -f "$HOME/.dircolors" ]; then
-    eval $(dircolors -b $HOME/.dircolors)
+# set a fancy prompt (non-color, unless we know we "want" color)
+case "$TERM" in
+    xterm-color) color_prompt=yes;;
+esac
+
+# uncomment for a colored prompt, if the terminal has the capability; turned
+# off by default to not distract the user: the focus in a terminal window
+# should be on the output of commands, not on the prompt
+#force_color_prompt=yes
+
+if [ -n "$force_color_prompt" ]; then
+    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+    # We have color support; assume it's compliant with Ecma-48
+    # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+    # a case would tend to support setf rather than setaf.)
+    color_prompt=yes
+    else
+    color_prompt=
+    fi
 fi
 
-# Color support of ls for BSD and Linux environments.
-if [ $(uname -s) == 'Darwin' ]; then
-    alias ls='ls -p'
+if [ "$color_prompt" = yes ]; then
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 else
-    alias ls='ls -p --color=auto'
+    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+fi
+unset color_prompt force_color_prompt
+
+# If this is an xterm set the title to user@host:dir
+case "$TERM" in
+xterm*|rxvt*)
+    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+    ;;
+*)
+    ;;
+esac
+
+# enable color support of ls and also add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    alias ls='ls --color=auto'
+    #alias dir='dir --color=auto'
+    #alias vdir='vdir --color=auto'
+
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
 fi
 
-# Aliases.
-alias i='ls'
-alias ll='ls -lGh'
+# some more ls aliases
+alias ll='ls -alF'
 alias la='ls -A'
-alias lh='find -maxdepth 1 -name ".*" -not -name "." -printf "%f\n" | xargs ls -d --color=auto'
-alias lr='ls -R'
-alias lla='ls -lGA'
-alias lld='ls -ld'
-alias llh='lh -lG'
+alias l='ls -CF'
 
-# Fix scrolling issue with tmux + irssi
-alias irssi='TERM=screen-256color irssi'
+# Add an "alert" alias for long running commands.  Use like so:
+#   sleep 10; alert
+alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
 
-# Use "g" to mean "git", with correct tab completion.
-alias g='git'
-complete -o default -o nospace -F _git g
+# Alias definitions.
+# You may want to put all your additions into a separate file like
+# ~/.bash_aliases, instead of adding them here directly.
+# See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
-# Search in files with "ack".
-if command -v ag >/dev/null; then
-    alias ack=ag
-elif command -v ack-grep >/dev/null; then
-    alias ack=$(command -v ack-grep)
-fi
-
-# Enable git command line completion in bash.
-if [ -f ~/.git-completion.bash ]; then
-    source ~/.git-completion.bash
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
 fi
 
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).
 if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
-    source /etc/bash_completion
+    . /etc/bash_completion
 fi
 
-# Python startup script and encoding.
-export PYTHONIOENCODING=utf8
-export PYTHONSTARTUP=$HOME/.pythonrc
+#Add user path
+#export PATH=$HOME/.local/bin:$PATH
+#export PATH=$HOME/arsenl/jsbsim/src:$PATH
+#export PATH=$HOME/arsenl/arsenl-ardupilot/Tools/autotest:$PATH
+#export PATH=$HOME/arsenl/mavproxy:$PATH
+#export PATH=$HOME/arsenl/mavlink/pymavlink/examples:$PATH
+#export PATH=/usr/lib/ccache:$PATH
 
-# don't allow Ctrl-S to stop terminal output
-stty stop ''
-
-# Set editor.
-export EDITOR='vim'
-
-# Fix ubuntu menu proxy warning in gvim.
-# From http://askubuntu.com/questions/132977/how-to-get-global-application-menu-for-gvim
-if [ -x /usr/bin/gvim ]; then
-    function gvim () { (/usr/bin/gvim -f "$@" &) }
-fi
-
-# Activate virtualenvwrapper.
-if command -v virtualenvwrapper.sh >/dev/null; then
-    source $(command -v virtualenvwrapper.sh)
-fi
-
-# Load rbenv
-eval "$(rbenv init -)"
+#Add function to parse current git branch
+. $HOME/.dotfiles/files/parse_git_branch
