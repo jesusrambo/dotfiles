@@ -115,4 +115,4 @@ fi
 #export PATH=/usr/lib/ccache:$PATH
 
 #Add function to parse current git branch
-. $HOME/.dotfiles/files/parse_git_branch
+. $HOME/.dotfiles/bin/parse_git_branch
