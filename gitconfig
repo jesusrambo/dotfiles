@@ -25,5 +25,5 @@
 [diff]
 	tool = meld
 [github]
-	user = christian-oudard
+	user = jesusrambo
 	token = <.replace github-token>
